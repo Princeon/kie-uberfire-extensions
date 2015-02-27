@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -16,12 +17,16 @@ import org.kie.uberfire.social.activities.model.SocialActivitiesEvent;
 import org.kie.uberfire.social.activities.model.SocialUser;
 import org.kie.uberfire.social.activities.service.SocialUserPersistenceAPI;
 import org.uberfire.backend.server.cluster.ClusterServiceFactoryProducer;
+import org.uberfire.client.workbench.events.ApplicationReadyEvent;
 import org.uberfire.commons.cluster.ClusterService;
 import org.uberfire.commons.data.Pair;
 import org.uberfire.commons.message.MessageHandler;
 import org.uberfire.commons.message.MessageHandlerResolver;
 import org.uberfire.commons.message.MessageType;
+import org.uberfire.commons.services.cdi.Startup;
+import org.uberfire.commons.services.cdi.StartupType;
 
+@Startup(StartupType.EAGER)
 @ApplicationScoped
 public class SocialUserClusterMessaging {
 
@@ -39,6 +44,7 @@ public class SocialUserClusterMessaging {
     SocialUserPersistenceAPI socialUserCachePersistence;
 
     private ClusterService clusterService;
+
 
     @PostConstruct
     public void setup() {

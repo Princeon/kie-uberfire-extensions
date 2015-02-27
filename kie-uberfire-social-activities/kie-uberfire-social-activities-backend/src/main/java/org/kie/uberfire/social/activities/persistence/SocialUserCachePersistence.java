@@ -39,7 +39,7 @@ public abstract class SocialUserCachePersistence implements SocialUserPersistenc
         this.userServicesBackend = userServicesBackend;
         this.ioService = ioService;
         this.gson = gson;
-        userNamesPath = userServicesBackend.buildPath( SOCIAL_FILES, userNamesFileName );
+        userNamesPath = userServicesBackend.buildPath( SOCIAL_FILES, userNamesFileName, ioService );
 
         syncSocialUsers();
     }
@@ -65,7 +65,8 @@ public abstract class SocialUserCachePersistence implements SocialUserPersistenc
 
     SocialUser createOrRetrieveUserData( String username ) throws RuntimeException {
         try {
-            Path userFile = userServicesBackend.buildPath( SOCIAL_FILES, username );
+            Path userFile = userServicesBackend.buildPath( SOCIAL_FILES, username, ioService );
+            ioService.startBatch( userFile.getFileSystem() );
             if ( ioService.exists( userFile ) ) {
                 String json = ioService.readAllString( userFile );
                 SocialUser socialUser = gson.fromJson( json, SocialUser.class );
@@ -78,14 +79,21 @@ public abstract class SocialUserCachePersistence implements SocialUserPersistenc
             }
         } catch ( Exception e ) {
             throw new ErrorCreatingOrRetrievingUserData( e );
+        } finally {
+            ioService.endBatch();
         }
     }
 
     public abstract void updateUsers( SocialUser... users );
 
     void writeUserNamesOnFile( List<String> userNames ) {
-        String json = gson.toJson( userNames );
-        ioService.write( userNamesPath, json );
+        try {
+            ioService.startBatch( userNamesPath.getFileSystem() );
+            String json = gson.toJson( userNames );
+            ioService.write( userNamesPath, json );
+        } finally {
+            ioService.endBatch();
+        }
     }
 
     private void createSocialUserCache( List<String> users ) {
@@ -135,7 +143,7 @@ public abstract class SocialUserCachePersistence implements SocialUserPersistenc
     }
 
     private boolean notAMergedBranch( String cleanName ) {
-        return !cleanName.contains( "upstream" )&&!cleanName.contains( "@" );
+        return !cleanName.contains( "upstream" ) && !cleanName.contains( "@" );
     }
 
     private void createSystemUser( List<String> userNames ) {

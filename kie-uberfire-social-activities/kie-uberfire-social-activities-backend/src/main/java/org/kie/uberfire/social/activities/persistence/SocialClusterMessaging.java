@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -20,12 +21,16 @@ import org.kie.uberfire.social.activities.model.SocialUser;
 import org.kie.uberfire.social.activities.service.SocialEventTypeRepositoryAPI;
 import org.kie.uberfire.social.activities.service.SocialTimelinePersistenceAPI;
 import org.uberfire.backend.server.cluster.ClusterServiceFactoryProducer;
+import org.uberfire.client.workbench.events.ApplicationReadyEvent;
 import org.uberfire.commons.cluster.ClusterService;
 import org.uberfire.commons.data.Pair;
 import org.uberfire.commons.message.MessageHandler;
 import org.uberfire.commons.message.MessageHandlerResolver;
 import org.uberfire.commons.message.MessageType;
+import org.uberfire.commons.services.cdi.Startup;
+import org.uberfire.commons.services.cdi.StartupType;
 
+@Startup(StartupType.EAGER)
 @ApplicationScoped
 public class SocialClusterMessaging {
 
@@ -33,7 +38,7 @@ public class SocialClusterMessaging {
 
     private Type gsonCollectionType;
 
-    private String cluster = "default";
+    private String cluster = "social_service";
 
     @Inject
     ClusterServiceFactoryProducer clusterServiceFactoryProducer;

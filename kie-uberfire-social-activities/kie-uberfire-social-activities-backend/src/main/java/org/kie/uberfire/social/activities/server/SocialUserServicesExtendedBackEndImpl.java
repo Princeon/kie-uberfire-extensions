@@ -7,6 +7,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.uberfire.io.IOService;
 import org.uberfire.java.nio.base.AbstractPath;
 import org.uberfire.java.nio.file.FileSystem;
 import org.uberfire.java.nio.file.Path;
@@ -28,12 +29,16 @@ public class SocialUserServicesExtendedBackEndImpl {
     }
 
     public Path buildPath( final String serviceType,
-                           final String relativePath ) {
-
-        if ( relativePath != null && !"".equals( relativePath ) ) {
-            return fileSystem.getPath( "social", serviceType, relativePath );
-        } else {
-            return fileSystem.getPath( "social", serviceType );
+                           final String relativePath, IOService ioService ) {
+        try {
+            ioService.startBatch( fileSystem );
+            if ( relativePath != null && !"".equals( relativePath ) ) {
+                return fileSystem.getPath( "social", serviceType, relativePath );
+            } else {
+                return fileSystem.getPath( "social", serviceType );
+            }
+        } finally {
+            ioService.endBatch();
         }
     }
 }
