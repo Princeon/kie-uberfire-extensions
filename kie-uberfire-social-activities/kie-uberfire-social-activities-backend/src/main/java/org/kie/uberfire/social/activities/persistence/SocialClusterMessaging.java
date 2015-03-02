@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -20,70 +19,72 @@ import org.kie.uberfire.social.activities.model.SocialEventType;
 import org.kie.uberfire.social.activities.model.SocialUser;
 import org.kie.uberfire.social.activities.service.SocialEventTypeRepositoryAPI;
 import org.kie.uberfire.social.activities.service.SocialTimelinePersistenceAPI;
-import org.uberfire.backend.server.cluster.ClusterServiceFactoryProducer;
-import org.uberfire.client.workbench.events.ApplicationReadyEvent;
 import org.uberfire.commons.cluster.ClusterService;
+import org.uberfire.commons.cluster.ClusterServiceFactory;
 import org.uberfire.commons.data.Pair;
 import org.uberfire.commons.message.MessageHandler;
 import org.uberfire.commons.message.MessageHandlerResolver;
 import org.uberfire.commons.message.MessageType;
 import org.uberfire.commons.services.cdi.Startup;
-import org.uberfire.commons.services.cdi.StartupType;
 
-@Startup(StartupType.EAGER)
 @ApplicationScoped
+@Startup
 public class SocialClusterMessaging {
 
     private Gson gson;
 
     private Type gsonCollectionType;
 
-    private String cluster = "social_service";
+    private String cluster = "social-service";
 
     @Inject
-    ClusterServiceFactoryProducer clusterServiceFactoryProducer;
+    private ClusterServiceFactory clusterServiceFactory;
 
     @Inject
     @Named("socialTimelinePersistence")
-    SocialTimelinePersistenceAPI socialTimelinePersistence;
+    private SocialTimelinePersistenceAPI socialTimelinePersistence;
 
     @Inject
-    SocialEventTypeRepositoryAPI socialEventTypeRepository;
+    private SocialEventTypeRepositoryAPI socialEventTypeRepository;
 
     private ClusterService clusterService;
 
     @PostConstruct
     public void setup() {
         gsonFactory();
-        clusterService = clusterServiceFactoryProducer.clusterServiceFactory().build( new MessageHandlerResolver() {
-            @Override
-            public String getServiceId() {
-                return cluster;
-            }
+        if ( clusterServiceFactory != null ) {
+            clusterService = clusterServiceFactory.build( new MessageHandlerResolver() {
+                @Override
+                public String getServiceId() {
+                    return cluster;
+                }
 
-            @Override
-            public MessageHandler resolveHandler( String serviceId,
-                                                  MessageType type ) {
-                return new MessageHandler() {
-                    @Override
-                    public Pair<MessageType, Map<String, String>> handleMessage( MessageType type,
-                                                                                 Map<String, String> content ) {
-                        if ( type.equals( SocialClusterMessage.SOCIAL_EVENT ) ) {
-                            handleSocialEvent( content );
-                        }
+                @Override
+                public MessageHandler resolveHandler( String serviceId,
+                                                      MessageType type ) {
+                    return new MessageHandler() {
+                        @Override
+                        public Pair<MessageType, Map<String, String>> handleMessage( MessageType type,
+                                                                                     Map<String, String> content ) {
+                            if ( type.equals( SocialClusterMessage.SOCIAL_EVENT ) ) {
+                                handleSocialEvent( content );
+                            }
 
-                        if ( type.equals( SocialClusterMessage.SOCIAL_FILE_SYSTEM_PERSISTENCE ) ) {
-                            handleSocialPersistenceEvent( content );
-                        }
-                        if ( type.equals( SocialClusterMessage.CLUSTER_SHUTDOWN ) ) {
-                            handleClusterShutdown();
-                        }
+                            if ( type.equals( SocialClusterMessage.SOCIAL_FILE_SYSTEM_PERSISTENCE ) ) {
+                                handleSocialPersistenceEvent( content );
+                            }
+                            if ( type.equals( SocialClusterMessage.CLUSTER_SHUTDOWN ) ) {
+                                handleClusterShutdown();
+                            }
 
-                        return new Pair<MessageType, Map<String, String>>( type, content );
-                    }
-                };
-            }
-        } );
+                            return new Pair<MessageType, Map<String, String>>( type, content );
+                        }
+                    };
+                }
+            } );
+        } else {
+            clusterService = null;
+        }
     }
 
     private void handleClusterShutdown() {
@@ -145,6 +146,9 @@ public class SocialClusterMessaging {
     }
 
     public void notify( SocialActivitiesEvent event ) {
+        if ( clusterService == null ) {
+            return;
+        }
         String eventJson = gson.toJson( event );
         Map<String, String> content = new HashMap<String, String>();
         content.put( SocialClusterMessage.NEW_EVENT.name(), eventJson );
@@ -154,6 +158,9 @@ public class SocialClusterMessaging {
     }
 
     public void notifyTimeLineUpdate( SocialActivitiesEvent event ) {
+        if ( clusterService == null ) {
+            return;
+        }
         Map<String, String> content = new HashMap<String, String>();
         String json = gson.toJson( event );
         content.put( SocialClusterMessage.UPDATE_TYPE_EVENT.name(), json );
@@ -164,6 +171,9 @@ public class SocialClusterMessaging {
 
     public void notifyTimeLineUpdate( SocialUser user,
                                       List<SocialActivitiesEvent> storedEvents ) {
+        if ( clusterService == null ) {
+            return;
+        }
         Map<String, String> content = new HashMap<String, String>();
         String json = gson.toJson( user );
         content.put( SocialClusterMessage.UPDATE_USER_EVENT.name(), json );
@@ -172,6 +182,9 @@ public class SocialClusterMessaging {
     }
 
     public boolean canILockFileSystem() {
+        if ( clusterService == null ) {
+            return false;
+        }
         if ( clusterService.isLocked() ) {
             return false;
         }
@@ -184,6 +197,9 @@ public class SocialClusterMessaging {
     }
 
     public void notifySomeInstanceisTakingCareOfShutdown() {
+        if ( clusterService == null ) {
+            return;
+        }
         clusterService.broadcast( cluster, SocialClusterMessage.CLUSTER_SHUTDOWN,
                                   new HashMap<String, String>() );
     }

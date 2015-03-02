@@ -24,14 +24,13 @@ public class SocialUserClusterPersistence extends SocialUserCachePersistence {
     public void updateUsers( SocialUser... users ) {
         for ( SocialUser user : users ) {
             usersCache.put( user.getUserName(), user );
-            Path userFile =userServicesBackend.buildPath( SOCIAL_FILES,user.getUserName(), ioService );
+            Path userFile = userServicesBackend.buildPath( SOCIAL_FILES, user.getUserName() );
             try {
                 ioService.startBatch( userFile.getFileSystem() );
-                String json = gson.toJson( user );
-                ioService.write( userFile, json );
+                ioService.write( userFile, gson.toJson( user ) );
             } catch ( Exception e ) {
                 throw new ErrorUpdatingUsers( e );
-            }finally {
+            } finally {
                 ioService.endBatch();
             }
             socialUserClusterMessaging.notify( user );
@@ -52,12 +51,11 @@ public class SocialUserClusterPersistence extends SocialUserCachePersistence {
     }
 
     public void sync( SocialUser user ) {
-        if (!usersNamesCache.contains( user.getUserName() )){
+        if ( !usersNamesCache.contains( user.getUserName() ) ) {
             usersNamesCache.add( user.getUserName() );
         }
         usersCache.put( user.getUserName(), user );
     }
-
 
 }
 
