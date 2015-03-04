@@ -19,6 +19,7 @@ import org.kie.uberfire.social.activities.model.SocialEventType;
 import org.kie.uberfire.social.activities.model.SocialUser;
 import org.kie.uberfire.social.activities.service.SocialEventTypeRepositoryAPI;
 import org.kie.uberfire.social.activities.service.SocialTimelinePersistenceAPI;
+import org.kie.uberfire.social.activities.service.SocialUserPersistenceAPI;
 import org.uberfire.commons.cluster.ClusterService;
 import org.uberfire.commons.cluster.ClusterServiceFactory;
 import org.uberfire.commons.data.Pair;
@@ -47,6 +48,10 @@ public class SocialClusterMessaging {
     @Inject
     private SocialEventTypeRepositoryAPI socialEventTypeRepository;
 
+    @Inject
+    @Named( "socialUserPersistenceAPI" )
+    private SocialUserPersistenceAPI socialUserPersistenceAPI;
+
     private ClusterService clusterService;
 
     @PostConstruct
@@ -66,15 +71,18 @@ public class SocialClusterMessaging {
                         @Override
                         public Pair<MessageType, Map<String, String>> handleMessage( MessageType type,
                                                                                      Map<String, String> content ) {
-                            if ( type.equals( SocialClusterMessage.SOCIAL_EVENT ) ) {
-                                handleSocialEvent( content );
-                            }
+                            if ( type != null ) {
+                                String strType = type.toString();
+                                if ( strType.equals( SocialClusterMessage.SOCIAL_EVENT.name() ) ) {
+                                    handleSocialEvent( content );
+                                }
 
-                            if ( type.equals( SocialClusterMessage.SOCIAL_FILE_SYSTEM_PERSISTENCE ) ) {
-                                handleSocialPersistenceEvent( content );
-                            }
-                            if ( type.equals( SocialClusterMessage.CLUSTER_SHUTDOWN ) ) {
-                                handleClusterShutdown();
+                                if ( strType.equals( SocialClusterMessage.SOCIAL_FILE_SYSTEM_PERSISTENCE.name() ) ) {
+                                    handleSocialPersistenceEvent( content );
+                                }
+                                if ( strType.equals( SocialClusterMessage.CLUSTER_SHUTDOWN.name() ) ) {
+                                    handleClusterShutdown();
+                                }
                             }
 
                             return new Pair<MessageType, Map<String, String>>( type, content );
@@ -131,8 +139,11 @@ public class SocialClusterMessaging {
             cacheClusterPersistence.persist( event, typeEvent, false );
             if ( user != null ) {
                 cacheClusterPersistence.persist( user, event );
+                for ( String followerName : user.getFollowersName() ) {
+                    SocialUser follower = socialUserPersistenceAPI.getSocialUser( followerName );
+                    cacheClusterPersistence.persist( follower, event );
+                }
             }
-
         }
 
     }
@@ -150,9 +161,10 @@ public class SocialClusterMessaging {
             return;
         }
         String eventJson = gson.toJson( event );
+        String userJson = gson.toJson( event.getSocialUser() );
         Map<String, String> content = new HashMap<String, String>();
         content.put( SocialClusterMessage.NEW_EVENT.name(), eventJson );
-        content.put( SocialClusterMessage.NEW_EVENT_USER.name(), eventJson );
+        content.put( SocialClusterMessage.NEW_EVENT_USER.name(), userJson );
         clusterService.broadcast( cluster, SocialClusterMessage.SOCIAL_EVENT,
                                   content );
     }

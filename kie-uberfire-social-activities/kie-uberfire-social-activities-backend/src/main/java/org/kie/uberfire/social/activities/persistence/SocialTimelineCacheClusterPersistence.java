@@ -57,7 +57,7 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
     public void saveAllEvents() {
         boolean iLockTheFileSystem = false;
         try {
-            if ( !socialClusterMessaging.canILockFileSystem() ) {
+            if ( socialClusterMessaging.canILockFileSystem() ) {
                 iLockTheFileSystem = true;
                 socialClusterMessaging.notifySomeInstanceisTakingCareOfShutdown();
                 saveAllTypeEvents();

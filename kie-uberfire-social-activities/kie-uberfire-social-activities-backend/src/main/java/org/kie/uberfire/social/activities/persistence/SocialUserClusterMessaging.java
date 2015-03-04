@@ -48,7 +48,7 @@ public class SocialUserClusterMessaging {
         gsonFactory();
 
         if ( clusterServiceFactory != null ) {
-            clusterServiceFactory.build( new MessageHandlerResolver() {
+            clusterService = clusterServiceFactory.build( new MessageHandlerResolver() {
                 @Override
                 public String getServiceId() {
                     return cluster;
@@ -61,11 +61,12 @@ public class SocialUserClusterMessaging {
                         @Override
                         public Pair<MessageType, Map<String, String>> handleMessage( MessageType type,
                                                                                      Map<String, String> content ) {
-
-                            if ( type.equals( SocialUserClusterMessage.SOCIAL_USER_UPDATE ) ) {
-                                handleUserUpdate( content );
+                            if ( type != null ) {
+                                String strType = type.toString();
+                                if ( strType.equals( SocialUserClusterMessage.SOCIAL_USER_UPDATE.name() ) ) {
+                                    handleUserUpdate( content );
+                                }
                             }
-
                             return new Pair<MessageType, Map<String, String>>( type, content );
                         }
                     };
