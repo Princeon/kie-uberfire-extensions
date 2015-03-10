@@ -320,7 +320,7 @@ public abstract class SocialTimelineCachePersistence implements SocialTimelinePe
         return persistEvents( newEvents, userDir );
     }
 
-    private Path getUserDirectory( String userName ) {
+    Path getUserDirectory( String userName ) {
         Path directory = getRootUserTimelineDirectory();
         return directory.resolve( userName );
     }

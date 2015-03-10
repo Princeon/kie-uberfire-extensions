@@ -1,6 +1,10 @@
 package org.kie.uberfire.social.activities.client.widgets.timeline.simple;
 
-import com.github.gwtbootstrap.client.ui.Container;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.github.gwtbootstrap.client.ui.Fieldset;
 import com.github.gwtbootstrap.client.ui.FluidContainer;
 import com.github.gwtbootstrap.client.ui.NavList;
@@ -60,7 +64,7 @@ public class SimpleSocialTimelineWidget extends Composite {
             public void callback( PagedSocialQuery paged ) {
                 createTimeline( paged );
             }
-        }, SocialUserTimelinePagedRepositoryAPI.class ).getUserTimeline( model.getSocialUser(), model.getSocialPaged(),  model.getPredicate() );
+        }, SocialUserTimelinePagedRepositoryAPI.class ).getUserTimeline( model.getSocialUser(), model.getSocialPaged(), model.getPredicate() );
     }
 
     private void createSociaTypelItemsWidget() {
@@ -68,7 +72,7 @@ public class SimpleSocialTimelineWidget extends Composite {
             public void callback( PagedSocialQuery paged ) {
                 createTimeline( paged );
             }
-        }, SocialTypeTimelinePagedRepositoryAPI.class ).getEventTimeline( model.getSocialEventType().name(), model.getSocialPaged(),  model.getPredicate() );
+        }, SocialTypeTimelinePagedRepositoryAPI.class ).getEventTimeline( model.getSocialEventType().name(), model.getSocialPaged(), model.getPredicate() );
     }
 
     private void createTimeline( PagedSocialQuery paged ) {
@@ -90,7 +94,13 @@ public class SimpleSocialTimelineWidget extends Composite {
 
     private void displayEvents( PagedSocialQuery paged ) {
         model.updateSocialPaged( paged.socialPaged() );
-        for ( final SocialActivitiesEvent event : paged.socialEvents() ) {
+
+        List<SocialActivitiesEvent> events = paged.socialEvents();
+        if ( model.isOneTypePerAsset() ) {
+            events = clearEventList( events );
+        }
+
+        for ( final SocialActivitiesEvent event : events ) {
             if ( event.hasLink() ) {
                 createSimpleWidgetWithLink( event );
             } else {
@@ -98,6 +108,19 @@ public class SimpleSocialTimelineWidget extends Composite {
             }
         }
         setupPaginationButtonsSocial();
+    }
+
+    private List<SocialActivitiesEvent> clearEventList( List<SocialActivitiesEvent> events ) {
+        List<SocialActivitiesEvent> cleanEvents  = new ArrayList<SocialActivitiesEvent>(  );
+        Map<String,Boolean> oneAssetPerTypeMap = new HashMap<String, Boolean>(  );
+        for ( SocialActivitiesEvent event : events ) {
+            String key = event.getDescription() + event.getType();
+            if(!oneAssetPerTypeMap.containsKey( key )){
+                oneAssetPerTypeMap.put( key, true );
+                cleanEvents.add( event );
+            }
+        }
+        return cleanEvents;
     }
 
     private void createSimpleWidgetWithLink( final SocialActivitiesEvent event ) {

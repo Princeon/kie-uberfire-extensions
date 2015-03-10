@@ -22,18 +22,13 @@
 
 
   <ui:style>
-    .userBox {
-      float:left;
-      text-align:center;
-      margin-left: 10px;
-    }
+
     .follow {
       text-align:center;
-      margin-left: 10px;
     }
   </ui:style>
-  <g:FlowPanel  ui:field="panel"  addStyleNames="{style.userBox}">
-     <g:FlowPanel ui:field="userBoxPanel"  addStyleNames="{style.userBox}"/>
+  <g:FlowPanel  ui:field="panel"  >
+     <g:FlowPanel ui:field="userBoxPanel" />
      <g:FlowPanel ui:field="followLink" addStyleNames="{style.follow}"/>
   </g:FlowPanel>
 

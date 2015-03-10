@@ -14,6 +14,7 @@ import org.kie.uberfire.social.activities.service.SocialEventTypeRepositoryAPI;
 import org.kie.uberfire.social.activities.service.SocialTimelinePersistenceAPI;
 import org.kie.uberfire.social.activities.service.SocialUserPersistenceAPI;
 import org.uberfire.io.IOService;
+import org.uberfire.java.nio.file.Path;
 
 public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePersistence implements SocialTimelinePersistenceAPI {
 
@@ -55,19 +56,19 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
 
     @Override
     public void saveAllEvents() {
-        boolean iLockTheFileSystem = false;
-        try {
-            if ( socialClusterMessaging.canILockFileSystem() ) {
-                iLockTheFileSystem = true;
+        if ( !typeEventsTimelineCache.keySet().isEmpty() ) {
+            try {
+                final SocialEventType sampleType = typeEventsTimelineCache.keySet().iterator().next();
+                Path timeLineDir = userServicesBackend.buildPath( SOCIAL_FILES, sampleType.name() );
+                ioService.startBatch( timeLineDir.getFileSystem() );
                 socialClusterMessaging.notifySomeInstanceisTakingCareOfShutdown();
                 saveAllTypeEvents();
                 saveAllUserTimelines();
-            }
-        } finally {
-            if ( iLockTheFileSystem ) {
-                socialClusterMessaging.unlockFileSystem();
+            } finally {
+                ioService.endBatch();
             }
         }
+
     }
 
     private void registerNewEvent( SocialUser user,
@@ -183,17 +184,16 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
             userEventsCacheControl.put( user.getUserName(), socialCacheControl );
         }
         socialCacheControl.registerNewEvent();
-        boolean iLockTheFileSystem = false;
-        try {
-            if ( socialCacheControl.needToPersist() && !socialClusterMessaging.canILockFileSystem() ) {
-                iLockTheFileSystem = true;
+        if ( socialCacheControl.needToPersist() ) {
+            Path userDir = getUserDirectory( user.getUserName() );
+            try {
+                //TODO concurrency control
+                ioService.startBatch( userDir.getFileSystem() );
                 List<SocialActivitiesEvent> storedEvents = storeTimeLineInFile( user );
                 socialClusterMessaging.notifyTimeLineUpdate( user, storedEvents );
                 socialCacheControl.reset();
-            }
-        } finally {
-            if ( iLockTheFileSystem ) {
-                socialClusterMessaging.unlockFileSystem();
+            } finally {
+                ioService.endBatch();
             }
         }
     }
@@ -203,17 +203,16 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
         SocialEventType type = socialEventTypeRepository.findType( event.getType() );
         SocialCacheControl socialCacheControl = typeEventsCacheControl.get( type );
         socialCacheControl.registerNewEvent();
-        boolean iLockTheFileSystem = false;
-        try {
-            if ( socialCacheControl.needToPersist() && !socialClusterMessaging.canILockFileSystem() ) {
-                iLockTheFileSystem = true;
-                storeTimeLineInFile( eventType );
+        if ( socialCacheControl.needToPersist() ) {
+            Path timeLineDir = userServicesBackend.buildPath( SOCIAL_FILES, type.name() );
+            try {
+                //TODO concurrency control
+                ioService.startBatch( timeLineDir.getFileSystem() );
                 socialClusterMessaging.notifyTimeLineUpdate( event );
+                storeTimeLineInFile( eventType );
                 socialCacheControl.reset();
-            }
-        } finally {
-            if ( iLockTheFileSystem ) {
-                socialClusterMessaging.unlockFileSystem();
+            } finally {
+                ioService.endBatch();
             }
         }
     }

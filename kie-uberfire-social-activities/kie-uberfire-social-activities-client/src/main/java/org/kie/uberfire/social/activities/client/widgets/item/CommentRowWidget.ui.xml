@@ -18,8 +18,8 @@
       margin-left: 50px;
     }
   </ui:style>
-  <b:Row addStyleNames="{style.comment}">
-    <b:Column size="1" ui:field="thumbnail" addStyleNames="{style.right}"/>
+  <b:FluidRow addStyleNames="{style.comment}">
+    <b:Column size="1" ui:field="thumbnail" addStyleNames="{style.center}"/>
     <b:Column size="9" ui:field="addInfo" addStyleNames="{style.left}"/>
-  </b:Row>
+  </b:FluidRow>
 </ui:UiBinder>

@@ -193,21 +193,6 @@ public class SocialClusterMessaging {
                                   content );
     }
 
-    public boolean canILockFileSystem() {
-        if ( clusterService == null ) {
-            return false;
-        }
-        if ( clusterService.isLocked() ) {
-            return false;
-        }
-        clusterService.lock();
-        return true;
-    }
-
-    public void unlockFileSystem() {
-        clusterService.unlock();
-    }
-
     public void notifySomeInstanceisTakingCareOfShutdown() {
         if ( clusterService == null ) {
             return;

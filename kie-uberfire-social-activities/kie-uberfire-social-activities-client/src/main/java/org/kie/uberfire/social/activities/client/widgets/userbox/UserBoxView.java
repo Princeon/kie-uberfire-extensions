@@ -89,6 +89,8 @@ public class UserBoxView extends Composite {
     private NavList createLink( final SocialUser follower,
                                 final ParameterizedCommand<String> command ) {
         NavList list = new NavList();
+        list.getElement().getStyle().setProperty("paddingLeft", "0px");
+        list.getElement().getStyle().setProperty("paddingRight", "0px");
         NavLink link = new NavLink();
         link.setText( follower.getUserName() );
         link.addClickHandler( new ClickHandler() {

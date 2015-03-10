@@ -25,6 +25,7 @@ public class SimpleSocialTimelineWidgetModel {
     private NavLink more;
     private List<ClientResourceType> resourceTypes;
     private ParameterizedCommand<LinkCommandParams> linkCommand;
+    private boolean oneTypePerAsset = false;
 
     public SimpleSocialTimelineWidgetModel( SocialEventType socialEventType,
                                             SocialPredicate<SocialActivitiesEvent> predicate,
@@ -121,4 +122,12 @@ public class SimpleSocialTimelineWidgetModel {
         return linkCommand;
     }
 
+    public SimpleSocialTimelineWidgetModel oneTypePerAsset() {
+        oneTypePerAsset = true;
+        return this;
+    }
+
+    public boolean isOneTypePerAsset() {
+        return oneTypePerAsset;
+    }
 }
