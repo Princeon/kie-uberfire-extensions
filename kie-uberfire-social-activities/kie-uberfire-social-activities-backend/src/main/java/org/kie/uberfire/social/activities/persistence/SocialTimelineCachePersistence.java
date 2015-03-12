@@ -357,16 +357,15 @@ public abstract class SocialTimelineCachePersistence implements SocialTimelinePe
     List<SocialActivitiesEvent> storeTimeLineInFile( SocialUser user ) {
         List<SocialActivitiesEvent> socialActivitiesEvents = userEventsTimelineFreshEvents.get( user.getUserName() );
         persistEvents( user, socialActivitiesEvents );
-        refreshCache( user, socialActivitiesEvents );
+        refreshCache( user.getUserName(), socialActivitiesEvents );
         return socialActivitiesEvents;
     }
 
-    void refreshCache( SocialUser user,
+    void refreshCache( String userName,
                        List<SocialActivitiesEvent> socialActivitiesEvents ) {
-        userEventsTimelineFreshEvents.put( user.getUserName(), new ArrayList<SocialActivitiesEvent>() );
-        userEventsTimelineCache.put( user.getUserName(), socialActivitiesEvents );
+        userEventsTimelineFreshEvents.put( userName, new ArrayList<SocialActivitiesEvent>() );
+        userEventsTimelineCache.put( userName, socialActivitiesEvents );
     }
-
     Path getRootUserTimelineDirectory() {
         Path path = userServicesBackend.buildPath( SOCIAL_FILES, Constants.USER_TIMELINE.name() );
         return path;

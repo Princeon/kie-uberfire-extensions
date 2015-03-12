@@ -2,7 +2,6 @@ package org.kie.uberfire.social.activities.persistence;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -61,14 +60,15 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
                 final SocialEventType sampleType = typeEventsTimelineCache.keySet().iterator().next();
                 Path timeLineDir = userServicesBackend.buildPath( SOCIAL_FILES, sampleType.name() );
                 ioService.startBatch( timeLineDir.getFileSystem() );
-                socialClusterMessaging.notifySomeInstanceisTakingCareOfShutdown();
+                socialClusterMessaging.notifySomeInstanceisOnShutdown();
                 saveAllTypeEvents();
                 saveAllUserTimelines();
+            } catch ( Exception e ) {
+                System.out.println();
             } finally {
                 ioService.endBatch();
             }
         }
-
     }
 
     private void registerNewEvent( SocialUser user,
@@ -87,7 +87,7 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
         SocialCacheControl socialCacheControl = userEventsCacheControl.get( user.getUserName() );
         socialCacheControl.reset();
         List<SocialActivitiesEvent> actualTypeTimeline = createOrGetUserTimeline( user.getUserName() );
-        refreshCache( user, actualTypeTimeline );
+        refreshCache( user.getUserName(), actualTypeTimeline );
         syncMyStaleItems( myFreshEvents, actualTypeTimeline, user );
     }
 
@@ -187,7 +187,6 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
         if ( socialCacheControl.needToPersist() ) {
             Path userDir = getUserDirectory( user.getUserName() );
             try {
-                //TODO concurrency control
                 ioService.startBatch( userDir.getFileSystem() );
                 List<SocialActivitiesEvent> storedEvents = storeTimeLineInFile( user );
                 socialClusterMessaging.notifyTimeLineUpdate( user, storedEvents );
@@ -206,7 +205,6 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
         if ( socialCacheControl.needToPersist() ) {
             Path timeLineDir = userServicesBackend.buildPath( SOCIAL_FILES, type.name() );
             try {
-                //TODO concurrency control
                 ioService.startBatch( timeLineDir.getFileSystem() );
                 socialClusterMessaging.notifyTimeLineUpdate( event );
                 storeTimeLineInFile( eventType );
@@ -217,8 +215,14 @@ public class SocialTimelineCacheClusterPersistence extends SocialTimelineCachePe
         }
     }
 
-    public void clusterShutDown() {
-        typeEventsFreshEvents = new HashMap<SocialEventType, List<SocialActivitiesEvent>>();
-        userEventsTimelineFreshEvents = new HashMap<String, List<SocialActivitiesEvent>>();
+    public void someNodeShutdownAndPersistEvents() {
+        for ( SocialEventType socialEventType : typeEventsFreshEvents.keySet() ) {
+            final List<SocialActivitiesEvent> freshEvents = typeEventsFreshEvents.get( socialEventType );
+            refreshCache( socialEventType, freshEvents );
+        }
+        for ( String user : userEventsTimelineFreshEvents.keySet() ) {
+            final List<SocialActivitiesEvent> userEvents = userEventsTimelineFreshEvents.get( user );
+            refreshCache( user, userEvents );
+        }
     }
 }

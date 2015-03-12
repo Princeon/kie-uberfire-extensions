@@ -76,7 +76,6 @@ public class SocialClusterMessaging {
                                 if ( strType.equals( SocialClusterMessage.SOCIAL_EVENT.name() ) ) {
                                     handleSocialEvent( content );
                                 }
-
                                 if ( strType.equals( SocialClusterMessage.SOCIAL_FILE_SYSTEM_PERSISTENCE.name() ) ) {
                                     handleSocialPersistenceEvent( content );
                                 }
@@ -97,13 +96,12 @@ public class SocialClusterMessaging {
 
     private void handleClusterShutdown() {
         SocialTimelineCacheClusterPersistence cacheClusterPersistence = (SocialTimelineCacheClusterPersistence) socialTimelinePersistence;
-        cacheClusterPersistence.clusterShutDown();
+        cacheClusterPersistence.someNodeShutdownAndPersistEvents();
     }
 
     private void handleSocialPersistenceEvent( Map<String, String> content ) {
         SocialActivitiesEvent eventTypeName = null;
         SocialUser user = null;
-        List<SocialActivitiesEvent> events = new ArrayList<SocialActivitiesEvent>();
         SocialTimelineCacheClusterPersistence cacheClusterPersistence = (SocialTimelineCacheClusterPersistence) socialTimelinePersistence;
         for ( final Map.Entry<String, String> entry : content.entrySet() ) {
             if ( entry.getKey().equalsIgnoreCase( SocialClusterMessage.UPDATE_TYPE_EVENT.name() ) ) {
@@ -193,7 +191,7 @@ public class SocialClusterMessaging {
                                   content );
     }
 
-    public void notifySomeInstanceisTakingCareOfShutdown() {
+    public void notifySomeInstanceisOnShutdown() {
         if ( clusterService == null ) {
             return;
         }
@@ -204,5 +202,11 @@ public class SocialClusterMessaging {
     private enum SocialClusterMessage implements MessageType {
         NEW_EVENT, NEW_EVENT_USER, UPDATE_TYPE_EVENT, UPDATE_USER_EVENT, SOCIAL_EVENT, SOCIAL_FILE_SYSTEM_PERSISTENCE, CLUSTER_SHUTDOWN;
 
+    }
+    public void lockFileSystem() {
+        clusterService.lock();
+    }
+    public void unlockFileSystem() {
+        clusterService.unlock();
     }
 }
